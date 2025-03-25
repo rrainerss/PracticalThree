@@ -3,10 +3,12 @@ import {
   StyleSheet,
   View,
   Dimensions,
+  Text
 } from "react-native";
 import * as Location from "expo-location";
 import MapView, { Marker, Region } from "react-native-maps";
-import { Button } from "react-native-paper";
+import { Button, Modal, Portal, Provider } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Weather = {
   coord: {
@@ -33,6 +35,10 @@ export default function HomeScreen() {
   const [data, setData] = useState<Weather[]>([]);
 
   const apiKey = process.env.EXPO_PUBLIC_API_KEY;
+
+  const [visible, setVisible] = useState(false);
+  const showModal = () => setVisible(true);
+  const hideModal = () => setVisible(false);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -73,30 +79,56 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {initialRegion ? (
-        <>
-          <MapView style={styles.map} region={initialRegion}>
-            {currentLocation && (
-              <Marker
-                coordinate={{
-                  latitude: currentLocation.latitude,
-                  longitude: currentLocation.longitude,
-                }}
-                title="You are here!"
-              />
-            )}
-          </MapView>
-          <View style={styles.buttonContainer}>
-            <Button style={styles.button} labelStyle={styles.buttonText} mode="contained" onPress={() => console.log("Button Pressed")}>
-              Show weather
-            </Button>
-          </View>
-        </>
-      ) : (
-        <View style={styles.loadingContainer}>{}</View>
-      )}
-    </View>
+    <Provider>
+      <SafeAreaView style={styles.container}>
+        {initialRegion ? (
+          <>
+            <MapView style={styles.map} region={initialRegion}>
+              {currentLocation && (
+                <Marker
+                  coordinate={{
+                    latitude: currentLocation.latitude,
+                    longitude: currentLocation.longitude,
+                  }}
+                  title="You are here!"
+                />
+              )}
+            </MapView>
+            <View style={styles.buttonContainer}>
+              <Button 
+                style={styles.button} 
+                labelStyle={styles.buttonText} 
+                mode="contained" 
+                onPress={showModal}>
+                Show weather
+              </Button>
+            </View>
+            <Portal>
+              <Modal
+                visible={visible}
+                onDismiss={hideModal}
+                contentContainerStyle={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalText}>Example Modal</Text>
+                  <Text style={styles.modalText}>
+                    Click outside this area to dismiss.
+                  </Text>
+                  <Button
+                    style={styles.button} 
+                    labelStyle={styles.buttonText} 
+                    mode="contained" 
+                    onPress={hideModal}>
+                    Close
+                  </Button>
+                </View>
+              </Modal>
+            </Portal>
+          </>
+        ) : (
+          <View style={styles.loadingContainer}>{}</View>
+        )}
+      </SafeAreaView>
+    </Provider>
   );
 }
 
@@ -124,5 +156,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "black",
-  }
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    padding: 20,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalContent: {
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
 });
