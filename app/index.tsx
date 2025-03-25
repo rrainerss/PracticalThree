@@ -32,7 +32,7 @@ export default function HomeScreen() {
   const [isLoading, setLoading] = useState(true);
   const [data, setData] = useState<Weather[]>([]);
 
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.EXPO_PUBLIC_API_KEY;
 
   useEffect(() => {
     const getLocation = async () => {
