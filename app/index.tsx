@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  View,
-  Dimensions,
-  Text
-} from "react-native";
+import { StyleSheet, View, Text, } from "react-native";
 import * as Location from "expo-location";
 import MapView, { Marker, Region } from "react-native-maps";
 import { Button, Modal, Portal, Provider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 type Weather = {
   coord: {
@@ -31,10 +27,19 @@ export default function HomeScreen() {
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
 
-  const [isLoading, setLoading] = useState(true);
-  const [data, setData] = useState<Weather[]>([]);
+  const [data, setData] = useState<Weather | null>(null);
 
   const apiKey = process.env.EXPO_PUBLIC_API_KEY;
+
+  useEffect(() => {
+    const changeOrientation = async () => {
+      await ScreenOrientation.unlockAsync();
+    };
+    changeOrientation();
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    };
+  }, []);
 
   const [visible, setVisible] = useState(false);
   const showModal = () => setVisible(true);
@@ -65,16 +70,12 @@ export default function HomeScreen() {
 
   const getWeather = async (lat: number, lon: number) => {
     try {
-      const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+      const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
       const json = await response.json();
-      setData(json.weather);
-      console.log(JSON.stringify(json))
+      setData(json);
     } 
     catch (error) {
       console.error(error);
-    } 
-    finally {
-      setLoading(false);
     }
   };
 
@@ -109,18 +110,25 @@ export default function HomeScreen() {
                 onDismiss={hideModal}
                 contentContainerStyle={styles.modalContainer}>
                 <View style={styles.modalContent}>
-                  <Text style={styles.modalText}>Example Modal</Text>
-                  <Text style={styles.modalText}>
-                    Click outside this area to dismiss.
-                  </Text>
-                  <Button
-                    style={styles.button} 
-                    labelStyle={styles.buttonText} 
-                    mode="contained" 
-                    onPress={hideModal}>
-                    Close
-                  </Button>
+                  {data && ( 
+                    <>
+                    <Text style={styles.modalText}>Place: {data.name}</Text>
+                    <Text style={styles.modalText}>Latitude: {data.coord.lat}°</Text>
+                    <Text style={styles.modalText}>Longitude: {data.coord.lon}°</Text>
+                    <Text style={styles.modalText}>Temp: {data.main.temp}°C</Text>
+                    <Text style={styles.modalText}>Pressure: {data.main.pressure} hPa</Text>
+                    <Text style={styles.modalText}>Humidity: {data.main.humidity}%</Text>
+                    <Text style={styles.modalText}>Description: {data.weather[0].description}</Text>
+                    </>
+                  )}
                 </View>
+                <Button
+                  style={styles.button} 
+                  labelStyle={styles.buttonText} 
+                  mode="contained" 
+                  onPress={hideModal}>
+                  Close
+                </Button>
               </Modal>
             </Portal>
           </>
@@ -160,9 +168,13 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: "white",
     padding: 20,
+    maxWidth: 400,
     marginHorizontal: 20,
     borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 'auto',
+    marginRight: 'auto',
   },
   modalContent: {
     alignItems: "center",
